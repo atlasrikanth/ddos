@@ -1,0 +1,29 @@
+2025-03-14 18:47:04,257 -  * Debugger is active!
+2025-03-14 18:47:04,268 -  * Debugger PIN: 404-152-662
+2025-03-14 18:47:39,023 - 127.0.0.1 - - [14/Mar/2025 18:47:39] "GET / HTTP/1.1" 200 -
+2025-03-14 18:47:51,649 - Detection Result: {'Random Forest': 'Normal', 'Deep Learning': 'Normal', 'DL Probability': 0.0}
+2025-03-14 18:47:51,650 - 127.0.0.1 - - [14/Mar/2025 18:47:51] "POST /predict HTTP/1.1" 200 -
+2025-03-14 18:48:00,931 - Detection Result: {'Random Forest': 'Normal', 'Deep Learning': 'Normal', 'DL Probability': 8.75302248459775e-08}
+2025-03-14 18:48:00,931 - 127.0.0.1 - - [14/Mar/2025 18:48:00] "POST /predict HTTP/1.1" 200 -
+2025-03-14 18:48:04,868 - Detection Result: {'Random Forest': 'Normal', 'Deep Learning': 'Normal', 'DL Probability': 1.9710616925294744e-06}
+2025-03-14 18:48:04,869 - 127.0.0.1 - - [14/Mar/2025 18:48:04] "POST /predict HTTP/1.1" 200 -
+2025-03-14 18:48:06,867 - Detection Result: {'Random Forest': 'Normal', 'Deep Learning': 'Normal', 'DL Probability': 2.6370728392066667e-06}
+2025-03-14 18:48:06,868 - 127.0.0.1 - - [14/Mar/2025 18:48:06] "POST /predict HTTP/1.1" 200 -
+2025-03-14 18:48:07,047 - Detection Result: {'Random Forest': 'Normal', 'Deep Learning': 'Normal', 'DL Probability': 2.6443556180311134e-06}
+2025-03-14 18:48:07,048 - 127.0.0.1 - - [14/Mar/2025 18:48:07] "POST /predict HTTP/1.1" 200 -
+2025-03-14 18:48:07,238 - Detection Result: {'Random Forest': 'Normal', 'Deep Learning': 'Normal', 'DL Probability': 0.0}
+2025-03-14 18:48:07,239 - 127.0.0.1 - - [14/Mar/2025 18:48:07] "POST /predict HTTP/1.1" 200 -
+2025-03-14 18:48:07,483 - Detection Result: {'Random Forest': 'Normal', 'Deep Learning': 'Normal', 'DL Probability': 0.0}
+2025-03-14 18:48:07,484 - 127.0.0.1 - - [14/Mar/2025 18:48:07] "POST /predict HTTP/1.1" 200 -
+2025-03-14 18:48:11,109 - Detection Result: {'Random Forest': 'Normal', 'Deep Learning': 'Normal', 'DL Probability': 4.170344227157387e-36}
+2025-03-14 18:48:11,110 - 127.0.0.1 - - [14/Mar/2025 18:48:11] "POST /predict HTTP/1.1" 200 -
+2025-03-14 18:48:15,038 - Detection Result: {'Random Forest': 'Normal', 'Deep Learning': 'Normal', 'DL Probability': 3.950989606652494e-38}
+2025-03-14 18:48:15,038 - 127.0.0.1 - - [14/Mar/2025 18:48:15] "POST /predict HTTP/1.1" 200 -
+2025-03-14 18:48:17,043 - Detection Result: {'Random Forest': 'Normal', 'Deep Learning': 'Normal', 'DL Probability': 1.150435222242972e-23}
+2025-03-14 18:48:17,043 - 127.0.0.1 - - [14/Mar/2025 18:48:17] "POST /predict HTTP/1.1" 200 -
+2025-03-14 18:48:17,189 - Detection Result: {'Random Forest': 'Normal', 'Deep Learning': 'Normal', 'DL Probability': 1.150435222242972e-23}
+2025-03-14 18:48:17,190 - 127.0.0.1 - - [14/Mar/2025 18:48:17] "POST /predict HTTP/1.1" 200 -
+2025-03-14 18:48:17,381 - Detection Result: {'Random Forest': 'Normal', 'Deep Learning': 'Normal', 'DL Probability': 1.150435222242972e-23}
+2025-03-14 18:48:17,381 - 127.0.0.1 - - [14/Mar/2025 18:48:17] "POST /predict HTTP/1.1" 200 -
+2025-03-14 18:48:17,619 - Detection Result: {'Random Forest': 'Normal', 'Deep Learning': 'Normal', 'DL Probability': 1.150435222242972e-23}
+2025-03-14 18:48:17,619 - 127.0.0.1 - - [14/Mar/2025 18:48:17] "POST /predict HTTP/1.1" 200 -

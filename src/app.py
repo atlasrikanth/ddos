@@ -1,47 +1,33 @@
 from flask import Flask, request, jsonify, render_template
-import pandas as pd
-import joblib
-import tensorflow as tf
-import numpy as np
-from feature_extract import extract_features
 from scapy.all import sniff
+from feature_extract import extract_features
+import torch
+import joblib
 import logging
+from train_gnn import GNN
+
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__)
 
-# Set up logging
-logging.basicConfig(filename='ddos_detection.log', level=logging.INFO, format='%(asctime)s - %(message)s')
-
-# Load models and scaler with error handling
-try:
-    rf_model = joblib.load('models/rf_model.pkl')
-    print("Random Forest model loaded successfully.")
-except FileNotFoundError:
-    print("Error: Random Forest model file 'models/rf_model.pkl' not found!")
-    exit()
-except Exception as e:
-    print(f"Error loading Random Forest model: {e}")
-    exit()
+# Load model and scaler with error handling
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+logging.info(f"Using device: {device}")
 
 try:
-    dl_model = tf.keras.models.load_model('models/dl_model.keras')
-    print("Deep Learning model loaded successfully.")
+    model = GNN(num_features=10, hidden_channels=16, num_classes=2).to(device)
+    # Load model state dict with map_location and weights_only
+    state_dict = torch.load('models/gnn_model.pt', map_location=device, weights_only=True)
+    model.load_state_dict(state_dict)
+    model.eval()
+    logging.info("GNN model loaded successfully.")
 except FileNotFoundError:
-    print("Error: Deep Learning model file 'models/dl_model.keras' not found!")
-    exit()
+    logging.error("Error: GNN model file 'models/gnn_model.pt' not found!")
+    raise
 except Exception as e:
-    print(f"Error loading Deep Learning model: {e}")
-    exit()
-
-try:
-    scaler = joblib.load('models/scaler.pkl')
-    print("Scaler loaded successfully.")
-except FileNotFoundError:
-    print("Error: Scaler file 'models/scaler.pkl' not found!")
-    exit()
-except Exception as e:
-    print(f"Error loading scaler: {e}")
-    exit()
+    logging.error(f"Error loading GNN model: {e}")
+    raise
 
 @app.route('/')
 def home():
@@ -49,61 +35,63 @@ def home():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    print("Capturing traffic for 10 seconds...")
+    logging.info("Capturing traffic for 10 seconds...")
     try:
         packets = sniff(timeout=10, filter="ip")
         if not packets:
-            logging.info("No packets captured during the 10-second window.")
+            logging.warning("No packets captured during the 10-second window.")
             return jsonify({'error': 'No packets captured during the 10-second window.'})
-        print(f"Captured {len(packets)} packets.")
+        logging.info(f"Captured {len(packets)} packets.")
         
-        features = extract_features(packets, duration=10)
-        if features is None or features.empty:
-            logging.info("No valid features extracted from captured packets.")
-            return jsonify({'error': 'No valid features extracted from captured packets.'})
+        graph = extract_features(packets, duration=10)
+        if graph is None:
+            logging.warning("No valid packets processed or feature extraction failed.")
+            return jsonify({'error': 'No valid packets processed or feature extraction failed.'})
         
-        expected_columns = [
-            'Flow Duration', 'Total Fwd Packets', 'Total Backward Packets',
-            'Fwd Packet Length Mean', 'Bwd Packet Length Mean', 'Flow Bytes/s',
-            'Flow Packets/s', 'Fwd IAT Mean', 'Bwd IAT Mean', 'Packet Length Mean'
-        ]
-        if list(features.columns) != expected_columns:
-            logging.error(f"Extracted features do not match expected columns. Got {list(features.columns)}")
-            return jsonify({'error': f'Extracted features do not match expected columns. Got {list(features.columns)}'})
+        # Verify the number of features
+        if graph.num_features != 10:
+            logging.error(f"Feature mismatch: Expected 10 features, got {graph.num_features}")
+            return jsonify({'error': f'Feature mismatch: Expected 10 features, got {graph.num_features}'})
         
+        # Debug graph structure
+        logging.info(f"Graph structure: num_nodes={graph.num_nodes}, num_edges={graph.edge_index.shape[1]}")
+        
+        # Move graph to device
+        graph = graph.to(device)
+        
+        # Make prediction
         try:
-            features_scaled = scaler.transform(features)
-            features_scaled_df = pd.DataFrame(features_scaled, columns=expected_columns)
+            with torch.no_grad():
+                out = model(graph)
+                logging.info(f"Model output shape: {out.shape}")
+                if out.shape[0] == 0:
+                    return jsonify({'error': 'No valid predictions from model.'})
+                
+                # Handle single or multiple nodes
+                if out.shape[0] == 1:  # Single node graph
+                    probs = torch.softmax(out, dim=1)
+                    dl_pred_proba = probs[0, 1].cpu().numpy()  # Probability of DDoS
+                else:  # Multiple nodes, average probability
+                    probs = torch.softmax(out, dim=1)
+                    dl_pred_proba = probs[:, 1].mean().cpu().numpy()  # Average probability of DDoS
+                
+                dl_pred = 1 if dl_pred_proba > 0.5 else 0
         except Exception as e:
-            logging.error(f"Error scaling features: {e}")
-            return jsonify({'error': f'Error scaling features: {e}'})
-        
-        try:
-            rf_pred = rf_model.predict(features_scaled_df)[0]
-        except Exception as e:
-            logging.error(f"Error with Random Forest prediction: {e}")
-            return jsonify({'error': f'Error with Random Forest prediction: {e}'})
-        
-        try:
-            dl_pred_proba = dl_model.predict(features_scaled, verbose=0)[0][0]
-            dl_pred = 1 if dl_pred_proba > 0.5 else 0
-        except Exception as e:
-            logging.error(f"Error with Deep Learning prediction: {e}")
-            return jsonify({'error': f'Error with Deep Learning prediction: {e}'})
+            logging.error(f"Error during GNN prediction: {e}")
+            return jsonify({'error': f'Prediction error: {e}'})
         
         result = {
-            'Random Forest': 'DDoS' if rf_pred == 1 else 'Normal',
-            'Deep Learning': 'DDoS' if dl_pred == 1 else 'Normal',
-            'DL Probability': float(dl_pred_proba)
+            'GNN': 'DDoS' if dl_pred == 1 else 'Normal',
+            'GNN Probability': float(dl_pred_proba)
         }
         logging.info(f"Detection Result: {result}")
-        if rf_pred == 1 or dl_pred == 1:
+        if dl_pred == 1:
             logging.warning("Potential DDoS attack detected!")
         return jsonify(result)
     
     except Exception as e:
-        logging.error(f"Error during packet capture: {e}")
-        return jsonify({'error': f'Error during packet capture: {e}'})
+        logging.error(f"Error during packet capture or processing: {e}")
+        return jsonify({'error': f'Error during processing: {e}. Ensure Npcap is installed and run as Administrator.'})
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

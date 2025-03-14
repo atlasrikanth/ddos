@@ -2,32 +2,96 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>DDoS Detection</title>
+    <title>DDoS Detection System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        h3 {
+            margin-top: 20px;
+            color: #2c3e50;
+        }
+        #result {
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            white-space: pre-wrap;
+            font-family: Arial, sans-serif;
+        }
+        .error {
+            color: #e74c3c;
+        }
+        .success {
+            color: #2ecc71;
+        }
+        .warning {
+            color: #e67e22;
+        }
+    </style>
 </head>
 <body>
     <h1>DDoS Detection System</h1>
-    <button onclick="getPrediction()">Check Traffic</button>
-    <div id="result"></div>
+    <button id="predictBtn" onclick="predict()">Capture Traffic and Predict</button>
+    <h3>Results:</h3>
+    <pre id="result"></pre>
 
     <script>
-        function getPrediction() {
-            fetch('/predict', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
-                    const resultDiv = document.getElementById('result');
-                    if (data.error) {
-                        resultDiv.innerHTML = `<p>Error: ${data.error}</p>`;
-                    } else {
-                        resultDiv.innerHTML = `
-                            <p>Random Forest: ${data['Random Forest']}</p>
-                            <p>Deep Learning: ${data['Deep Learning']}</p>
-                            <p>DL Probability: ${data['DL Probability']}</p>
-                        `;
-                    }
-                })
-                .catch(error => {
-                    document.getElementById('result').innerHTML = `<p>Error: ${error}</p>`;
+        async function predict() {
+            const resultDiv = document.getElementById('result');
+            const predictBtn = document.getElementById('predictBtn');
+            
+            // Disable button and show loading message
+            predictBtn.disabled = true;
+            predictBtn.textContent = "Capturing Traffic...";
+            resultDiv.textContent = "Capturing network traffic for 10 seconds... Please wait.";
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
                 });
+                const result = await response.json();
+
+                if (result.error) {
+                    resultDiv.innerHTML = `<span class="error">Error: ${result.error}</span>`;
+                } else {
+                    const predictionClass = result['GNN'] === 'DDoS' ? 'warning' : 'success';
+                    resultDiv.innerHTML = `
+                        <span class="${predictionClass}">GNN Prediction: ${result['GNN']}</span>
+                        <br>
+                        <span>GNN Probability: ${result['GNN Probability'].toFixed(4)}</span>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">Error: Failed to fetch prediction - ${error.message}</span>`;
+            } finally {
+                // Re-enable button
+                predictBtn.disabled = false;
+                predictBtn.textContent = "Capture Traffic and Predict";
+            }
         }
     </script>
 </body>
